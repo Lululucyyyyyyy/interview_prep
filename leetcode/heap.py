@@ -11,9 +11,14 @@ class Heap:
     def right_child(self, x):
         return x * 2 + 2
 
+    def compare(self, x, y):
+        return self.heap[x] < self.heap[y]
+
     def heapify_up(self, x):
+        if x == 0:
+            return
         p = self.parent(x)
-        if self.heap[x] > self.heap[p]:
+        if self.compare(x, p):
             self.heap[x], self.heap[p] = self.heap[p], self.heap[x]
             self.heapify_up(p)
 
@@ -21,9 +26,9 @@ class Heap:
         l = self.left_child(x)
         r = self.right_child(x)
         s = x
-        if l < len(self.heap) and self.heap[s] > self.heap[l]:
+        if l < len(self.heap) and self.compare(l, s):
             s = l
-        if r < len(self.heap) and self.heap[s] > self.heap[r]:
+        if r < len(self.heap) and self.compare(r, s):
             s = r
         if s != x:
             self.heap[x], self.heap[s] = self.heap[s], self.heap[x]
@@ -33,7 +38,7 @@ class Heap:
         self.heap.append(x)
         self.heapify_up(len(self.heap) - 1)
     
-    def pop(self, x):
+    def pop(self):
         if self.heap:
             ret = self.heap[0]
             self.heap[0] = self.heap[-1]
