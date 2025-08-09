@@ -1,10 +1,89 @@
 # Search Engines & ML Theory Interview Prep Guide
 
+## Table of Contents
+
+### Core Information Retrieval Concepts
+- [TF-IDF (Term Frequency-Inverse Document Frequency)](#tf-idf-term-frequency-inverse-document-frequency)
+- [BM25 (Best Matching 25)](#bm25-best-matching-25)
+- [Structured Queries](#structured-queries)
+
+### Retrieval Models & Ranking
+- [Language Models (Indri)](#language-models-indri)
+  - [Dirichlet Smoothing](#dirichlet-smoothing)
+  - [Jelinek-Mercer Smoothing](#jelinek-mercer-smoothing)
+  - [Why Smoothing Matters](#why-smoothing-matters)
+- [Sequential Dependency Models (SDM)](#sequential-dependency-models-sdm)
+
+### Learning to Rank (LTR)
+- [Approaches](#approaches)
+  - [Pointwise](#pointwise)
+  - [Pairwise](#pairwise)
+  - [Listwise](#listwise)
+- [Popular LTR Algorithms](#popular-ltr-algorithms)
+- [Position and Presentation Bias](#position-and-presentation-bias-in-learning-to-rank)
+- [Feature Engineering](#feature-engineering)
+- [Evaluation Metrics](#evaluation-metrics)
+  - [P@k (Precision at k)](#pk-precision-at-k)
+  - [MAP (Mean Average Precision)](#map-mean-average-precision)
+  - [MRR (Mean Reciprocal Rank)](#mrr-mean-reciprocal-rank)
+  - [NDCG (Normalized Discounted Cumulative Gain)](#ndcg-normalized-discounted-cumulative-gain)
+
+### Recommendation Systems
+
+![Recommendation Systems Overview](https://miro.medium.com/v2/resize:fit:1400/1*Zvwzw0FJaG_OZ8bGAXhfGQ.png)
+- [Collaborative Filtering](#collaborative-filtering)
+- [Content-Based Filtering](#content-based-filtering)
+- [Embedding-Based Approaches](#embedding-based-approaches)
+- [Two-Tower Architecture](#two-tower-architecture)
+- [Personalization Algorithms](#personalization-algorithms)
+- [Production Considerations](#production-considerations)
+
+### Diversity & Personalization
+
+![Diversity in Search Results](https://research.google/static/images/publications/intent-aware-query-obfuscation-for-privacy-protection-in-personalized-web-search_v1_01.gif)
+- [Diversity Metrics](#diversity-metrics)
+  - [α-NDCG](#α-ndcg-alpha-normalized-discounted-cumulative-gain)
+  - [P-IA@k](#p-iak-intent-aware-precision-at-k)
+  - [Subtopic Coverage](#subtopic-coverage)
+- [Diversification Algorithms](#diversification-algorithms)
+  - [PM2 (Portfolio Model 2)](#pm2-portfolio-model-2)
+  - [xQuAD](#xquad-explicit-query-aspect-diversification)
+  - [MMR (Maximal Marginal Relevance)](#mmr-maximal-marginal-relevance)
+
+### Advanced Topics
+- [Neural Information Retrieval](#neural-information-retrieval)
+- [Modern Production Systems](#modern-production-systems)
+- [LLM Integration](#llm-integration-in-searchrecsys)
+- [A/B Testing for Recommender Systems](#ab-testing-for-recommender-systems)
+
+### System Design Examples
+
+![System Design Overview](https://miro.medium.com/v2/resize:fit:1400/1*ZkwKKz0p2Cl8BgBTUC4ebA.png)
+- [Facebook News Feed](#facebook-news-feed)
+- [YouTube (Long-form Video)](#youtube-long-form-video)
+- [TikTok (Short-form Video)](#tiktok-short-form-video)
+- [Google Search Engine](#google-search-engine)
+
+### Common Interview Questions
+- [Algorithm Questions & Solutions](#common-algorithm-questions--solutions)
+- [Technical Deep Dives](#technical-deep-dives)
+- [System Design Case Study: TikTok](#system-design-case-study-tiktok-recommendation-engine)
+
+### Key Takeaways
+- [Interview Best Practices](#key-takeaways-for-interviews)
+
+---
+
 ## Core Information Retrieval Concepts
 
 ### TF-IDF (Term Frequency-Inverse Document Frequency)
 - **Definition**: Measures word importance by combining term frequency in document with rarity across collection
-- **Formula**: `TF-IDF(t,d) = TF(t,d) × IDF(t) = (count(t,d) / |d|) × log(N / df(t))`
+- **Formula**: 
+  - **Simple**: `TF-IDF(t,d) = TF(t,d) × IDF(t) = (count(t,d) / |d|) × log(N / df(t))`
+  - **LaTeX**: $\text{TF-IDF}(t,d) = \frac{\text{count}(t,d)}{|d|} \times \log\left(\frac{N}{\text{df}(t)}\right)$
+
+![TF-IDF Concept](https://miro.medium.com/v2/resize:fit:1400/1*qQgnyPLDIkUmeZKN2_ZWbQ.png)
+
 - **Use Cases**: Document ranking, feature extraction for ML models
 - **Limitations**: Doesn't handle synonyms, ignores word order
 - **Interview Q**: "How would you modify TF-IDF for very short queries vs long documents?"
@@ -19,7 +98,12 @@
 
 ### BM25 (Best Matching 25)
 - **Definition**: Probabilistic ranking function that improves on TF-IDF
-- **Formula**: `BM25(q,d) = Σ IDF(qi) × (f(qi,d) × (k1+1)) / (f(qi,d) + k1 × (1-b + b × |d|/avgdl))`
+- **Formula**: 
+  - **Simple**: `BM25(q,d) = Σ IDF(qi) × (f(qi,d) × (k1+1)) / (f(qi,d) + k1 × (1-b + b × |d|/avgdl))`
+  - **LaTeX**: $\text{BM25}(q,d) = \sum_{i=1}^{n} \text{IDF}(q_i) \cdot \frac{f(q_i,d) \cdot (k_1 + 1)}{f(q_i,d) + k_1 \cdot \left(1 - b + b \cdot \frac{|d|}{\text{avgdl}}\right)}$
+
+![BM25 vs TF-IDF Comparison](https://static.wixstatic.com/media/3eee0b_f1c1b0f905bd4359b54e97bf13e3bf67~mv2.png)
+
 - **Parameters**: 
   - k1 (1.2-2.0): Controls term frequency saturation
   - b (0.75): Controls length normalization
@@ -52,13 +136,17 @@
 
 ### Language Models (Indri)
 #### Dirichlet Smoothing
-- **Formula**: `P(t|d) = (c(t,d) + μ × P(t|C)) / (|d| + μ)`
+- **Formula**: 
+  - **Simple**: `P(t|d) = (c(t,d) + μ × P(t|C)) / (|d| + μ)`
+  - **LaTeX**: $P(t|d) = \frac{c(t,d) + \mu \cdot P(t|C)}{|d| + \mu}$
 - **What it does**: Adds a constant amount of smoothing based on collection probability
 - **Effect**: Longer documents need less smoothing (more reliable statistics)
 - **Good for**: Variable length documents, μ=1500 is typical
 
 #### Jelinek-Mercer Smoothing
-- **Formula**: `P(t|d) = λ × P(t|d_ml) + (1-λ) × P(t|C)`
+- **Formula**: 
+  - **Simple**: `P(t|d) = λ × P(t|d_ml) + (1-λ) × P(t|C)`
+  - **LaTeX**: $P(t|d) = \lambda \cdot P(t|d_{ml}) + (1-\lambda) \cdot P(t|C)$
 - **What it does**: Linear interpolation between document and collection models
 - **Effect**: Fixed proportion of smoothing regardless of document length
 - **Good for**: When you want consistent smoothing, λ=0.4 is typical
@@ -71,10 +159,14 @@
 ### Sequential Dependency Models (SDM)
 - **Components**: Unigrams, Bigrams, Windows
 - **Weights**: Typically λ1=0.8, λ2=0.1, λ3=0.1 for unigram/bigram/window
-- **Formula**: `P(Q|D) = λ1×P(q1,q2,...|D) + λ2×P(#near(q1,q2)|D) + λ3×P(#window(q1,q2)|D)`
+- **Formula**: 
+  - **Simple**: `P(Q|D) = λ1×P(q1,q2,...|D) + λ2×P(#near(q1,q2)|D) + λ3×P(#window(q1,q2)|D)`
+  - **LaTeX**: $P(Q|D) = \lambda_1 \sum_{i} P(q_i|D) + \lambda_2 \sum_{i} P(\#\text{near}(q_i,q_{i+1})|D) + \lambda_3 \sum_{i} P(\#\text{window}(q_i,q_{i+1})|D)$
 - **Interview Q**: "How would you tune SDM parameters for different query types?"
 
 ## Learning to Rank (LTR)
+
+![Learning to Rank Overview](https://raw.githubusercontent.com/microsoft/LightGBM/master/docs/Features/images/ranking.png)
 
 ### Approaches
 
@@ -184,12 +276,17 @@ def extract_training_pairs_with_bias_correction(query_sessions):
 ### Evaluation Metrics
 
 #### P@k (Precision at k)
-**Formula**: `P@k = (number of relevant docs in top-k) / k`
+**Formula**: 
+- **Simple**: `P@k = (number of relevant docs in top-k) / k`
+- **LaTeX**: $P@k = \frac{\text{number of relevant docs in top-}k}{k}$
 - **Use case**: When you care about precision at a specific cutoff
 - **Limitation**: Doesn't consider ranking order within top-k
 
 #### MAP (Mean Average Precision)
-**Formula**: `MAP = (1/|Q|) × Σ AP(q)` where `AP(q) = (1/R) × Σ P@k × rel(k)`
+**Formula**: 
+- **Simple**: `MAP = (1/|Q|) × Σ AP(q)` where `AP(q) = (1/R) × Σ P@k × rel(k)`
+- **LaTeX**: $\text{MAP} = \frac{1}{|Q|} \sum_{q=1}^{|Q|} \text{AP}(q)$
+  $\text{AP}(q) = \frac{1}{R} \sum_{k=1}^{n} P@k \cdot \text{rel}(k)$
 - **Components**: 
   - R = total number of relevant documents for query q
   - rel(k) = 1 if document at rank k is relevant, 0 otherwise
@@ -203,7 +300,9 @@ def extract_training_pairs_with_bias_correction(query_sessions):
 - **Best for**: Information retrieval tasks where recall matters
 
 #### MRR (Mean Reciprocal Rank)
-**Formula**: `MRR = (1/|Q|) × Σ (1/rank_i)` where rank_i is position of first relevant document
+**Formula**: 
+- **Simple**: `MRR = (1/|Q|) × Σ (1/rank_i)` where rank_i is position of first relevant document
+- **LaTeX**: $\text{MRR} = \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i}$
 - **Pros**: 
   - Simple and intuitive
   - Good for navigational queries
@@ -213,10 +312,17 @@ def extract_training_pairs_with_bias_correction(query_sessions):
 - **Best for**: Navigational queries ("Facebook login", "weather today")
 
 #### NDCG (Normalized Discounted Cumulative Gain)
-**Formula**: `NDCG@k = DCG@k / IDCG@k`
+**Formula**: 
+- **Simple**: `NDCG@k = DCG@k / IDCG@k`
+- **LaTeX**: $\text{NDCG}@k = \frac{\text{DCG}@k}{\text{IDCG}@k}$
 
-**DCG**: `DCG@k = Σ(i=1 to k) (2^rel_i - 1) / log2(i + 1)`
+**DCG**: 
+- **Simple**: `DCG@k = Σ(i=1 to k) (2^rel_i - 1) / log2(i + 1)`
+- **LaTeX**: $\text{DCG}@k = \sum_{i=1}^{k} \frac{2^{\text{rel}_i} - 1}{\log_2(i + 1)}$
+
 **IDCG**: Ideal DCG (DCG of perfect ranking)
+
+![NDCG Visualization](https://miro.medium.com/v2/resize:fit:1400/1*jQKdtT3ol5b4n9_j8gWwaw.png)
 
 - **Components**:
   - rel_i = relevance grade of document at position i (e.g., 0-4 scale)
@@ -273,6 +379,9 @@ def extract_training_pairs_with_bias_correction(query_sessions):
 - **User Tower**: Processes user features → user embedding
 - **Item Tower**: Processes item features → item embedding
 - **Scoring**: Dot product of embeddings
+
+![Two-Tower Architecture](https://miro.medium.com/v2/resize:fit:1400/1*NNOdVrIKxJ4QNMTjqGWz6Q.png)
+
 - **Advantages**: Scalable inference, pre-computable item embeddings
 - **Trade-offs**: Limited cross-feature interactions
 - **Practice**: Build a simple two-tower recommendation model
@@ -335,9 +444,12 @@ def extract_training_pairs_with_bias_correction(query_sessions):
 
 #### α-NDCG (Alpha-Normalized Discounted Cumulative Gain)
 **Formula**:
+- **Simple**: 
 ```
 α-NDCG@k = (1/Z) × Σ(i=1 to k) [(2^rel(di) - 1) / log2(i+1)] × Π(j=1 to i-1) (1 - α × I(dj, di))
 ```
+- **LaTeX**: 
+$\alpha\text{-NDCG}@k = \frac{1}{Z} \sum_{i=1}^{k} \frac{2^{\text{rel}(d_i)} - 1}{\log_2(i+1)} \prod_{j=1}^{i-1} (1 - \alpha \cdot I(d_j, d_i))$
 Where:
 - rel(di) = relevance of document di
 - I(dj, di) = indicator function (1 if documents dj and di cover the same subtopic, 0 otherwise)
@@ -364,9 +476,12 @@ P-IA@k = Σ(s∈S) P(s|q) × [number of relevant docs for subtopic s in top-k / 
 
 #### Subtopic Coverage
 **Formula**:
+- **Simple**: 
 ```
 Subtopic Coverage@k = |{s ∈ S : ∃di ∈ Dk, rel(di, s) = 1}| / |S|
 ```
+- **LaTeX**: 
+$\text{Subtopic Coverage}@k = \frac{|\{s \in S : \exists d_i \in D_k, \text{rel}(d_i, s) = 1\}|}{|S|}$
 Where:
 - S = set of all subtopics for the query
 - Dk = set of top-k retrieved documents
@@ -379,9 +494,12 @@ Where:
 
 #### PM2 (Portfolio Model 2)
 **Formula**:
+- **Simple**: 
 ```
 PM2(d|q) = λ × P(d|q) + (1-λ) × Σ P(s|q) × P(d|s) × (1 - Π (1 - P(di|s)))
 ```
+- **LaTeX**: 
+$\text{PM2}(d|q) = \lambda \cdot P(d|q) + (1-\lambda) \sum_{s} P(s|q) \cdot P(d|s) \cdot \left(1 - \prod_{d_i \in S} (1 - P(d_i|s))\right)$
 Where:
 - P(d|q) = relevance of document d to query q
 - P(s|q) = probability of subtopic s given query q
@@ -390,9 +508,12 @@ Where:
 
 #### xQuAD (eXplicit Query Aspect Diversification)
 **Formula**:
+- **Simple**: 
 ```
 xQuAD(d|q) = (1-λ) × P(d|q) + λ × Σ P(s|q) × P(d|s) × Π (1 - P(di|s))
 ```
+- **LaTeX**: 
+$\text{xQuAD}(d|q) = (1-\lambda) \cdot P(d|q) + \lambda \sum_{s} P(s|q) \cdot P(d|s) \cdot \prod_{d_i \in S} (1 - P(d_i|s))$
 Where:
 - Similar to PM2 but different normalization
 - Π (1 - P(di|s)) represents how much subtopic s is already covered
@@ -534,10 +655,13 @@ The choice depends on whether you want depth in important topics (PM2) or breadt
 
 #### MMR (Maximal Marginal Relevance)
 **Formula**:
+- **Simple**: 
 ```
 MMR = arg max[λ × Sim1(Di,Q) - (1-λ) × max Sim2(Di,Dj)]
                 Di∈R\S                    Dj∈S
 ```
+- **LaTeX**: 
+$\text{MMR} = \arg\max_{D_i \in R \setminus S} \left[\lambda \cdot \text{Sim}_1(D_i,Q) - (1-\lambda) \cdot \max_{D_j \in S} \text{Sim}_2(D_i,D_j)\right]$
 Where:
 - Sim1(Di,Q) = similarity between document Di and query Q
 - Sim2(Di,Dj) = similarity between documents Di and Dj
@@ -583,7 +707,9 @@ def mmr_diversify(query, docs, selected, lambda_param=0.5):
 - **What it does**: Efficient neural ranking with contextualized representations
 - **Architecture**: Separate BERT encoders for queries and documents
 - **Interaction**: Late interaction using MaxSim operation
-- **Formula**: `Score(q,d) = Σ max(E_q[i] · E_d[j])` for each query token i
+- **Formula**: 
+  - **Simple**: `Score(q,d) = Σ max(E_q[i] · E_d[j])` for each query token i
+  - **LaTeX**: $\text{Score}(q,d) = \sum_{i \in q} \max_{j \in d} E_q[i] \cdot E_d[j]$
 - **Advantages**: Better efficiency than cross-attention while maintaining quality
 - **Use case**: Efficient re-ranking of retrieved candidates
 
@@ -600,6 +726,8 @@ def mmr_diversify(query, docs, selected, lambda_param=0.5):
 - **Challenges**: Latency, hallucination, cost
 
 ### A/B Testing for Recommender Systems
+
+![A/B Testing Framework](https://miro.medium.com/v2/resize:fit:1400/1*5btlaGf-ktVhV7mTQzd44A.png)
 
 #### Network Effects Problem
 **Challenge**: Users influence each other through shares, follows, viral content
